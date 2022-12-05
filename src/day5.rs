@@ -86,9 +86,21 @@ impl Stacks {
 
 impl Display for Stacks {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for s in &self.stacks {
-            writeln!(f, "{}", s.into_iter().collect::<String>())?;
-        }
+        let max_len = self.stacks.iter().map(Vec::len).max().unwrap();
+        (0..=max_len).rev().try_for_each(|i| {
+            self.stacks
+            .iter()
+            .enumerate()
+            .try_for_each(|(stack_index, stack)|
+                if i == 0 {
+                    write!(f, " {}  ", stack_index+1)
+                } else if i-1 < stack.len() {
+                    write!(f, "[{}] ", stack[i-1])
+                } else {
+                    write!(f, "    ")
+                })?;
+            write!(f, "\n")
+        })?;
         Ok(())
     }
 }
@@ -101,6 +113,7 @@ fn crate_mover(
     lines
         .filter_map(|l| Instruction::from_str(&l).ok())
         .try_for_each(|instruction| { apply_instructions(&mut stacks, instruction)})?;
+    println!("{}\n", stacks);
     println!("{}\n", stacks.top());
     Ok(())
 }
