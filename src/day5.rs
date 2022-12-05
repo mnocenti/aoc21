@@ -48,18 +48,12 @@ impl Stacks {
     fn parse(lines: impl Iterator<Item = String>) -> utils::MyResult<Stacks> {
         let mut lines = lines.peekable();
         let mut stacks = Stacks::default();
-        stacks.stacks.resize(lines.peek().ok_or("Bad input")?.len() / 4 + 1, Stack::new());
+        stacks.stacks.resize(lines.peek().ok_or_else(||"Bad stacks input")?.len() / 4 + 1, Stack::new());
         for l in lines {
-            let mut chars = l.chars();
-            chars.next(); // skip first char
-            let crates_at_this_height: String = chars
-                .chunks(4)
-                .into_iter()
-                .filter_map(|mut a| a.next())
-                .collect();
-            for (i, c) in crates_at_this_height.chars().enumerate() {
+            for stack in 0..stacks.stacks.len() {
+                let c = l.chars().nth(4*stack+1).ok_or_else(||"Bad stacks input")?;
                 if !c.is_numeric() && !c.is_whitespace() {
-                    stacks.stacks[i].push_back(c);
+                    stacks.stacks[stack].push_back(c);
                 }
             }
         }
@@ -68,11 +62,7 @@ impl Stacks {
 
     /// Get the top of the stacks as a String
     fn top(&self) -> String {
-        let mut top = String::new();
-        for s in &self.stacks {
-            top.push(s[0]);
-        }
-        top
+        (&self.stacks).into_iter().filter_map(Stack::front).collect()
     }
 
     /// Apply a given instruction to the stacks using CrateMover 9000
@@ -81,7 +71,6 @@ impl Stacks {
             let a = self.stacks[instruction.source].pop_front().ok_or(":(")?;
             self.stacks[instruction.dest].push_front(a);
         }
-
         Ok(())
     }
 
@@ -92,7 +81,6 @@ impl Stacks {
             .collect();
         new_dest.append(&mut self.stacks[instruction.dest]);
         self.stacks[instruction.dest] = new_dest;
-        //println!("{}\n{}", instruction, self);
         Ok(())
     }
 }
