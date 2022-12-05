@@ -1,6 +1,6 @@
 mod utils;
 
-use std::{str::FromStr, collections::VecDeque, fmt::Display};
+use std::{collections::VecDeque, fmt::Display, str::FromStr};
 
 use itertools::Itertools;
 
@@ -11,7 +11,7 @@ fn main() -> utils::MyResult<()> {
     Ok(())
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 struct Instruction {
     count: usize,
     source: usize,
@@ -25,45 +25,49 @@ impl FromStr for Instruction {
         let words = str.split(' ').collect_vec();
         Ok(Instruction {
             count: words[1].parse()?,
-            source: words[3].parse::<usize>()?-1usize,
-            dest: words[5].parse::<usize>()?-1usize,
+            source: words[3].parse::<usize>()? - 1usize,
+            dest: words[5].parse::<usize>()? - 1usize,
         })
     }
 }
 
 impl Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "move {} from {} to {}", self.count, self.source+1, self.dest+1)
+        write!(f, "move {} from {} to {}", self.count, self.source + 1, self.dest + 1)
     }
 }
 
 type Stack = VecDeque<char>; //< crates, top to bottom
-#[derive(Debug,Default)]
-struct Stacks {
-    stacks: Vec<Stack>
-}
 
-fn parse_stacks(lines : impl Iterator<Item=String>) -> utils::MyResult<Stacks> {
-    let mut lines = lines.peekable();
-    let mut stacks = Stacks::default();
-    stacks.stacks.resize(lines.peek().ok_or("Bad input")?.len()/4+1, Stack::new());
-    for l in lines {
-        let mut chars = l.chars();
-        chars.next(); // skip first char
-        let crates_at_this_height : String = chars.chunks(4).into_iter().filter_map(|mut a| a.next()).collect();
-        for (i,c) in crates_at_this_height.chars().enumerate() {
-            if !c.is_numeric() && !c.is_whitespace() {
-                stacks.stacks[i].push_back(c);
-            }
-        }
-    }
-    Ok(stacks)
+#[derive(Debug, Default)]
+struct Stacks {
+    stacks: Vec<Stack>,
 }
 
 impl Stacks {
+    fn parse(lines: impl Iterator<Item = String>) -> utils::MyResult<Stacks> {
+        let mut lines = lines.peekable();
+        let mut stacks = Stacks::default();
+        stacks.stacks.resize(lines.peek().ok_or("Bad input")?.len() / 4 + 1, Stack::new());
+        for l in lines {
+            let mut chars = l.chars();
+            chars.next(); // skip first char
+            let crates_at_this_height: String = chars
+                .chunks(4)
+                .into_iter()
+                .filter_map(|mut a| a.next())
+                .collect();
+            for (i, c) in crates_at_this_height.chars().enumerate() {
+                if !c.is_numeric() && !c.is_whitespace() {
+                    stacks.stacks[i].push_back(c);
+                }
+            }
+        }
+        Ok(stacks)
+    }
 
     /// Get the top of the stacks as a String
-    fn top(&self)-> String {
+    fn top(&self) -> String {
         let mut top = String::new();
         for s in &self.stacks {
             top.push(s[0]);
@@ -72,7 +76,7 @@ impl Stacks {
     }
 
     /// Apply a given instruction to the stacks using CrateMover 9000
-    fn apply_9000(&mut self, instruction : Instruction) -> utils::MyResult<()>{
+    fn apply_9000(&mut self, instruction: Instruction) -> utils::MyResult<()> {
         for _ in 0..instruction.count {
             let a = self.stacks[instruction.source].pop_front().ok_or(":(")?;
             self.stacks[instruction.dest].push_front(a);
@@ -82,8 +86,10 @@ impl Stacks {
     }
 
     /// Apply a given instruction to the stacks using CrateMover 9001
-    fn apply_9001(&mut self, instruction : Instruction) -> utils::MyResult<()>{
-        let mut new_dest : VecDeque<char> = self.stacks[instruction.source].drain(0..instruction.count).collect();
+    fn apply_9001(&mut self, instruction: Instruction) -> utils::MyResult<()> {
+        let mut new_dest: VecDeque<char> = self.stacks[instruction.source]
+            .drain(0..instruction.count)
+            .collect();
         new_dest.append(&mut self.stacks[instruction.dest]);
         self.stacks[instruction.dest] = new_dest;
         //println!("{}\n{}", instruction, self);
@@ -100,12 +106,13 @@ impl Display for Stacks {
     }
 }
 
-fn crate_mover(apply_instructions : impl Fn(&mut Stacks, Instruction)->utils::MyResult<()>) -> utils::MyResult<()> {
-
+fn crate_mover(
+    apply_instructions: impl Fn(&mut Stacks, Instruction) -> utils::MyResult<()>
+) -> utils::MyResult<()> {
     let mut lines = utils::read_lines("inputs/input5.txt")?;
 
-    let mut stacks = parse_stacks((&mut lines).take_while(|s| !s.is_empty()))?;
-    
+    let mut stacks = Stacks::parse((&mut lines).take_while(|s| !s.is_empty()))?;
+
     let instructions = lines.filter_map(|l| Instruction::from_str(&l).ok());
 
     for instruction in instructions {
@@ -115,9 +122,8 @@ fn crate_mover(apply_instructions : impl Fn(&mut Stacks, Instruction)->utils::My
     println!("{}\n", stacks.top());
 
     Ok(())
-
 }
-    
+
 fn day5_1() -> utils::MyResult<()> {
     crate_mover(Stacks::apply_9000)
 }
