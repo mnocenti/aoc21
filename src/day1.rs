@@ -20,13 +20,15 @@ fn day1_1() -> utils::MyResult<()> {
         })
         .group_by(|i| *i != 0)
         .into_iter()
-        .filter_map(|(key, group)| {
-            if !key {
-                return None;
-            } else {
-                Some(group.sum::<i32>())
-            }
-        })
+        .filter_map(
+            |(key, group)| {
+                if !key {
+                    None
+                } else {
+                    Some(group.sum::<i32>())
+                }
+            },
+        )
         .sorted();
 
     //for i in res {

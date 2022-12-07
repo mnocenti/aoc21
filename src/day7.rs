@@ -9,6 +9,8 @@ struct DirPos {
 }
 
 const CD_CMD: &str = "$ cd ";
+const TOTAL_SPACE: usize = 70000000;
+const REQUIRED_SPACE: usize = 30000000;
 
 fn main() {
     let lines = include_str!("../inputs/input7.txt").lines().collect_vec();
@@ -21,8 +23,8 @@ fn main() {
         .sum::<usize>();
     println!("{}", part1);
 
-    let free_space = 70000000 - dir_sizes["/"];
-    let to_free = 30000000 - free_space;
+    let free_space = TOTAL_SPACE - dir_sizes["/"];
+    let to_free = REQUIRED_SPACE - free_space;
     let part2 = dir_sizes
         .iter()
         .filter_map(|(_, &size)| if size >= to_free { Some(size) } else { None })
@@ -32,7 +34,7 @@ fn main() {
 }
 
 /// Create an index storing the starting line of each directories
-fn create_dir_index(lines: &Vec<&str>) -> Vec<DirPos> {
+fn create_dir_index(lines: &[&str]) -> Vec<DirPos> {
     let cd_lines = lines
         .iter()
         .enumerate()
@@ -48,7 +50,7 @@ fn create_dir_index(lines: &Vec<&str>) -> Vec<DirPos> {
     for (i, cd_line) in cd_lines {
         match &cd_line[CD_CMD.len()..] {
             ".." => {
-                cur_dir = match cur_dir.rsplit_once("/") {
+                cur_dir = match cur_dir.rsplit_once('/') {
                     Some((prefix, _)) => String::from(prefix),
                     None => String::new(),
                 }
@@ -67,7 +69,7 @@ fn create_dir_index(lines: &Vec<&str>) -> Vec<DirPos> {
 }
 
 /// Compute the size of each directory and return it in a HashMap
-fn compute_sizes(lines: &Vec<&str>, dir_index: Vec<DirPos>) -> HashMap<String, usize> {
+fn compute_sizes(lines: &[&str], dir_index: Vec<DirPos>) -> HashMap<String, usize> {
     let mut dir_sizes: HashMap<String, usize> = HashMap::new();
     dir_index
         .into_iter()
@@ -80,9 +82,9 @@ fn compute_sizes(lines: &Vec<&str>, dir_index: Vec<DirPos>) -> HashMap<String, u
             // the size of all its subdirs are already computed
             let ls_output = lines[current_dir.line + 2..]
                 .iter()
-                .take_while(|l| !l.starts_with("$"));
+                .take_while(|l| !l.starts_with('$'));
             let current_size: usize = ls_output
-                .filter_map(|l| match l.split_once(" ") {
+                .filter_map(|l| match l.split_once(' ') {
                     Some(("dir", d)) => {
                         let sub_dir = join_dir(&current_dir.full_name, d);
                         Some(dir_sizes[&sub_dir])
