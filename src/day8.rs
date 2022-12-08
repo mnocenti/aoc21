@@ -3,7 +3,25 @@ use ndarray::{s, Array2};
 use take_until::TakeUntilExt;
 
 fn main() -> aoc22::MyResult<()> {
-    let forest = parse_input()?;
+    day8(include_str!("../inputs/input8.txt"))?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn example() -> aoc22::MyResult<()> {
+        let (part1, part2) = day8(include_str!("../inputs/example8.txt"))?;
+        assert_eq!(part1, 21);
+        assert_eq!(part2, 8);
+        Ok(())
+    }
+}
+
+pub fn day8(input: &str) -> aoc22::MyResult<(u32, u32)> {
+    let forest = parse_input(input)?;
 
     let part1: u32 = forest
         .indexed_iter()
@@ -18,11 +36,11 @@ fn main() -> aoc22::MyResult<()> {
         .unwrap();
     println!("{}", part2);
 
-    Ok(())
+    Ok((part1, part2))
 }
 
-fn parse_input() -> Result<Array2<u32>, ndarray::ShapeError> {
-    let lines: Vec<&str> = include_str!("../inputs/input8.txt").lines().collect();
+fn parse_input(input: &str) -> Result<Array2<u32>, ndarray::ShapeError> {
+    let lines: Vec<&str> = input.lines().collect();
     let width = lines.len();
     let height = lines[0].len();
 
