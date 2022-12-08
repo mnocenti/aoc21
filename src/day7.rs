@@ -18,16 +18,16 @@ fn main() {
     let dir_sizes = compute_sizes(&lines, dir_index);
 
     let part1 = dir_sizes
-        .iter()
-        .filter_map(|(_, &size)| if size <= 100000 { Some(size) } else { None })
+        .values()
+        .filter(|&&size| size <= 100000)
         .sum::<usize>();
     println!("{}", part1);
 
     let free_space = TOTAL_SPACE - dir_sizes["/"];
     let to_free = REQUIRED_SPACE - free_space;
     let part2 = dir_sizes
-        .iter()
-        .filter_map(|(_, &size)| if size >= to_free { Some(size) } else { None })
+        .values()
+        .filter(|&&size| size >= to_free)
         .min()
         .unwrap();
     println!("{}", part2);
