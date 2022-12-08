@@ -2,23 +2,9 @@ use ndarray::{s, Array2};
 
 use take_until::TakeUntilExt;
 
-fn main() -> aoc22::MyResult<()> {
-    day8(include_str!("../inputs/input8.txt"))?;
-    Ok(())
-}
+aoc22::main!(day8, "../inputs/input8.txt");
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn example() -> aoc22::MyResult<()> {
-        let (part1, part2) = day8(include_str!("../inputs/example8.txt"))?;
-        assert_eq!(part1, 21);
-        assert_eq!(part2, 8);
-        Ok(())
-    }
-}
+aoc22::test_with_example!(day8, "../inputs/example8.txt", 21, 8);
 
 pub fn day8(input: &str) -> aoc22::MyResult<(u32, u32)> {
     let forest = parse_input(input)?;
@@ -27,14 +13,12 @@ pub fn day8(input: &str) -> aoc22::MyResult<(u32, u32)> {
         .indexed_iter()
         .map(|(coord, _)| is_visible(coord, &forest) as u32)
         .sum();
-    println!("{}", part1);
 
     let part2: u32 = forest
         .indexed_iter()
         .map(|(coord, _)| scenic_score(coord, &forest))
         .max()
         .unwrap();
-    println!("{}", part2);
 
     Ok((part1, part2))
 }

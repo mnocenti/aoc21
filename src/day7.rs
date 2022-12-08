@@ -2,6 +2,10 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 
+aoc22::main!(day7, "../inputs/input7.txt");
+
+aoc22::test_with_example!(day7, "../inputs/example7.txt", 95437, 24933642);
+
 #[derive(Debug, Clone, Default)]
 struct DirPos {
     full_name: String,
@@ -12,8 +16,8 @@ const CD_CMD: &str = "$ cd ";
 const TOTAL_SPACE: usize = 70000000;
 const REQUIRED_SPACE: usize = 30000000;
 
-fn main() {
-    let lines = include_str!("../inputs/input7.txt").lines().collect_vec();
+fn day7(input: &str) -> aoc22::MyResult<(usize, usize)> {
+    let lines = input.lines().collect_vec();
     let dir_index = create_dir_index(&lines);
     let dir_sizes = compute_sizes(&lines, dir_index);
 
@@ -21,16 +25,16 @@ fn main() {
         .values()
         .filter(|&&size| size <= 100000)
         .sum::<usize>();
-    println!("{}", part1);
 
     let free_space = TOTAL_SPACE - dir_sizes["/"];
     let to_free = REQUIRED_SPACE - free_space;
-    let part2 = dir_sizes
+    let &part2 = dir_sizes
         .values()
         .filter(|&&size| size >= to_free)
         .min()
         .unwrap();
-    println!("{}", part2);
+
+    Ok((part1, part2))
 }
 
 /// Create an index storing the starting line of each directories
