@@ -1,10 +1,8 @@
-mod utils;
-
 use std::collections::HashSet;
 
 use itertools::Itertools;
 
-fn main() -> utils::MyResult<()> {
+fn main() -> aoc22::MyResult<()> {
     day3_1()?;
     day3_2()?;
 
@@ -19,15 +17,12 @@ fn item_priority(item: char) -> u32 {
     }
 }
 
-fn day3_1() -> utils::MyResult<()> {
-    let lines = utils::read_lines("inputs/input3.txt")?;
+fn day3_1() -> aoc22::MyResult<()> {
+    let lines = aoc22::read_lines("inputs/input3.txt")?;
     let res: u32 = lines
-        .map(|s| -> (HashSet<char>, HashSet<char>){
+        .map(|s| -> (HashSet<char>, HashSet<char>) {
             let hs = s.len() / 2;
-            (
-                s[..hs].chars().collect(),
-                s[hs..].chars().collect(),
-            )
+            (s[..hs].chars().collect(), s[hs..].chars().collect())
         })
         .map(|(left, right)| -> char { *left.intersection(&right).next().unwrap() })
         .map(item_priority)
@@ -38,8 +33,8 @@ fn day3_1() -> utils::MyResult<()> {
     Ok(())
 }
 
-fn day3_2() -> utils::MyResult<()> {
-    let lines = utils::read_lines("inputs/input3.txt")?;
+fn day3_2() -> aoc22::MyResult<()> {
+    let lines = aoc22::read_lines("inputs/input3.txt")?;
     let res: u32 = lines
         .map(|s| s.chars().collect::<HashSet<char>>())
         .chunks(3)

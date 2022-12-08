@@ -1,15 +1,13 @@
 use itertools::Itertools;
 
-mod utils;
-
-fn main() -> utils::MyResult<()> {
+fn main() -> aoc22::MyResult<()> {
     day1_1()?;
 
     Ok(())
 }
 
-fn day1_1() -> utils::MyResult<()> {
-    let lines = utils::read_lines("inputs/input1.txt")?;
+fn day1_1() -> aoc22::MyResult<()> {
+    let lines = aoc22::read_lines("inputs/input1.txt")?;
     let res = lines
         .map(|s| {
             if s.is_empty() {

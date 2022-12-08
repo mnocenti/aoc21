@@ -2,9 +2,7 @@ use ndarray::{s, Array2};
 
 use take_until::TakeUntilExt;
 
-mod utils;
-
-fn main() -> utils::MyResult<()> {
+fn main() -> aoc22::MyResult<()> {
     let forest = parse_input()?;
 
     let part1: u32 = forest

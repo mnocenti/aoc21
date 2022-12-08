@@ -1,10 +1,8 @@
-mod utils;
-
 use std::{fmt::Display, str::FromStr};
 
 use itertools::Itertools;
 
-fn main() -> utils::MyResult<()> {
+fn main() -> aoc22::MyResult<()> {
     day5_1()?;
     day5_2()?;
 
@@ -52,7 +50,7 @@ struct Stacks {
 
 impl Stacks {
     /// parse the first part of the input as a Stacks object
-    fn parse(lines: Vec<String>) -> utils::MyResult<Stacks> {
+    fn parse(lines: Vec<String>) -> aoc22::MyResult<Stacks> {
         let mut stacks = Stacks::default();
         stacks.stacks.resize(lines[0].len() / 4 + 1, Stack::new());
         for l in lines.into_iter().rev() {
@@ -72,7 +70,7 @@ impl Stacks {
     }
 
     /// Apply a given instruction to the stacks using CrateMover 9000
-    fn apply_9000(&mut self, inst: Instruction) -> utils::MyResult<()> {
+    fn apply_9000(&mut self, inst: Instruction) -> aoc22::MyResult<()> {
         for _ in 0..inst.count {
             let a = self.stacks[inst.source].pop().ok_or(":(")?;
             self.stacks[inst.dest].push(a);
@@ -81,7 +79,7 @@ impl Stacks {
     }
 
     /// Apply a given instruction to the stacks using CrateMover 9001
-    fn apply_9001(&mut self, inst: Instruction) -> utils::MyResult<()> {
+    fn apply_9001(&mut self, inst: Instruction) -> aoc22::MyResult<()> {
         let src = &mut self.stacks[inst.source];
         let top_crates = src.split_off(src.len() - inst.count);
         self.stacks[inst.dest].extend(top_crates);
@@ -112,9 +110,9 @@ impl Display for Stacks {
 }
 
 fn crate_mover(
-    apply_instructions: impl Fn(&mut Stacks, Instruction) -> utils::MyResult<()>,
-) -> utils::MyResult<()> {
-    let mut lines = utils::read_lines("inputs/input5.txt")?;
+    apply_instructions: impl Fn(&mut Stacks, Instruction) -> aoc22::MyResult<()>,
+) -> aoc22::MyResult<()> {
+    let mut lines = aoc22::read_lines("inputs/input5.txt")?;
     let mut stacks = Stacks::parse((&mut lines).take_while(|s| !s.is_empty()).collect())?;
     lines
         .filter_map(|l| Instruction::from_str(&l).ok())
@@ -124,10 +122,10 @@ fn crate_mover(
     Ok(())
 }
 
-fn day5_1() -> utils::MyResult<()> {
+fn day5_1() -> aoc22::MyResult<()> {
     crate_mover(Stacks::apply_9000)
 }
 
-fn day5_2() -> utils::MyResult<()> {
+fn day5_2() -> aoc22::MyResult<()> {
     crate_mover(Stacks::apply_9001)
 }

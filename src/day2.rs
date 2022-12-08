@@ -1,8 +1,6 @@
 use std::str::FromStr;
 
-mod utils;
-
-fn main() -> utils::MyResult<()> {
+fn main() -> aoc22::MyResult<()> {
     day2_1()?;
     day2_2()?;
 
@@ -87,8 +85,8 @@ fn score_v2(opponent_play: RPS, instructions: &str) -> i32 {
     my_play as i32 + outcome as i32
 }
 
-fn compute_score(score_fn: impl Fn(RPS, &str) -> i32) -> utils::MyResult<i32> {
-    let lines = utils::read_lines("inputs/input2.txt")?;
+fn compute_score(score_fn: impl Fn(RPS, &str) -> i32) -> aoc22::MyResult<i32> {
+    let lines = aoc22::read_lines("inputs/input2.txt")?;
     let res = lines
         .map(|s| {
             let parts: Vec<_> = s.split(' ').collect();
@@ -99,14 +97,14 @@ fn compute_score(score_fn: impl Fn(RPS, &str) -> i32) -> utils::MyResult<i32> {
     Ok(res)
 }
 
-fn day2_1() -> utils::MyResult<()> {
+fn day2_1() -> aoc22::MyResult<()> {
     let score = compute_score(score_v1)?;
     println!("{}", score);
 
     Ok(())
 }
 
-fn day2_2() -> utils::MyResult<()> {
+fn day2_2() -> aoc22::MyResult<()> {
     let score = compute_score(score_v2)?;
     println!("{}", score);
 
