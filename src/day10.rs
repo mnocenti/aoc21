@@ -39,16 +39,12 @@ pub fn day10(input: &str) -> aoc22::MyResult<(i32, String)> {
         }
         x = instr.apply(x);
     }
-    for (cycle, x) in states.iter().enumerate() {
-        println!("{}: {}", cycle, x);
-    }
 
     let part1 = states
         .iter()
         .enumerate()
         .filter_map(|(cycle, x)| {
             if is_interesting(cycle) {
-                println!("{}th cycle, x={}", cycle, x);
                 Some((cycle as i32) * x)
             } else {
                 None
