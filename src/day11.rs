@@ -1,27 +1,51 @@
-use std::{collections::VecDeque, fmt::Debug, str::FromStr};
+use std::{collections::VecDeque, fmt::Debug, rc::Rc, str::FromStr};
 
 use itertools::Itertools;
 
 aoc22::main!(day11, "../inputs/input11.txt");
 
-aoc22::test_with_example!(day11, "../inputs/example11.txt", 10605, 0);
+aoc22::test_with_example!(day11, "../inputs/example11.txt", 10605, 2713310158);
 
-pub fn day11(input: &str) -> aoc22::MyResult<(u64, i32)> {
-    let mut monkeys = input
+pub fn day11(input: &str) -> aoc22::MyResult<(u64, u64)> {
+    let monkeys = input
         .split("\r\n\r\n")
         .map(Monkey::from_str)
         .collect::<Result<Vec<_>, _>>()?;
 
-    for round in 1..=20 {
+    let part1 = monkey_business(monkeys.clone(), 20, &|worry| worry / 3)?;
+
+    let ppcm = monkeys.iter().map(|m| m.prime_factor).product();
+    let part2 = monkey_business(monkeys, 10000, &|worry| {
+        decrease_worry_with_ppcm(worry, ppcm)
+    })?;
+
+    Ok((part1, part2))
+}
+
+/// use prime numbers to fight anxiety
+fn decrease_worry_with_ppcm(worry: u64, ppcm: u64) -> u64 {
+    if worry > ppcm {
+        worry % ppcm + ppcm
+    } else {
+        worry
+    }
+}
+
+fn monkey_business(
+    mut monkeys: Vec<Monkey>,
+    round_count: usize,
+    decrease_worry: &impl Fn(u64) -> u64,
+) -> aoc22::MyResult<u64> {
+    for round in 1..=round_count {
         for monkey_index in 0..monkeys.len() {
-            while let Some((item, target)) = monkeys[monkey_index].inspect() {
+            while let Some((item, target)) = monkeys[monkey_index].inspect(decrease_worry) {
                 monkeys[target].catch(item);
             }
         }
         round_recap(round, &monkeys);
     }
 
-    let monkey_business = monkeys
+    let business = monkeys
         .iter()
         .sorted_by(|monmon, keykey| Ord::cmp(&monmon.inspections, &keykey.inspections))
         .rev()
@@ -30,26 +54,25 @@ pub fn day11(input: &str) -> aoc22::MyResult<(u64, i32)> {
         .next()
         .ok_or("No monke ?")?;
 
-    let part2 = 0;
-
-    Ok((monkey_business, part2))
+    Ok(business)
 }
 
+#[derive(Clone)]
 struct Monkey {
     items: VecDeque<u64>,
-    operation: Box<dyn Fn(u64) -> u64>,
-    divider: u64,
+    operation: Rc<dyn Fn(u64) -> u64>,
+    prime_factor: u64,
     target: (usize, usize),
     inspections: u64,
 }
 
 impl Monkey {
-    fn inspect(&mut self) -> Option<(u64, usize)> {
+    fn inspect(&mut self, decrease_worry: impl Fn(u64) -> u64) -> Option<(u64, usize)> {
         let mut item = self.items.pop_front()?;
         self.inspections += 1;
         item = (self.operation)(item);
-        item /= 3;
-        if item % self.divider == 0 {
+        item = decrease_worry(item);
+        if item % self.prime_factor == 0 {
             Some((item, self.target.0))
         } else {
             Some((item, self.target.1))
@@ -66,7 +89,7 @@ impl Debug for Monkey {
         f.debug_struct("Monkey")
             .field("items", &self.items)
             //.field("operation", &self.operation)
-            .field("divider", &self.divider)
+            .field("prime_factor", &self.prime_factor)
             .field("target", &self.target)
             .finish()
     }
@@ -90,7 +113,7 @@ impl FromStr for Monkey {
             ["Operation:", "new", "=", a, op, b] => parse_operation(a, op, b)?,
             ref bad => panic!("Can't parse operation : {:?}", bad),
         };
-        let divider = match lines[3].trim().split(&[' ', ',']).collect::<Vec<_>>()[..] {
+        let prime_factor = match lines[3].trim().split(&[' ', ',']).collect::<Vec<_>>()[..] {
             ["Test:", "divisible", "by", n] => n.parse()?,
             ref bad => panic!("Can't parse operation : {:?}", bad),
         };
@@ -109,7 +132,7 @@ impl FromStr for Monkey {
         Ok(Monkey {
             items,
             operation,
-            divider,
+            prime_factor,
             target: (monkey_true, monkey_false),
             inspections: 0,
         })
@@ -142,12 +165,12 @@ impl FromStr for Operand {
     }
 }
 
-fn parse_operation(a: &str, op: &str, b: &str) -> aoc22::MyResult<Box<dyn Fn(u64) -> u64>> {
+fn parse_operation(a: &str, op: &str, b: &str) -> aoc22::MyResult<Rc<dyn Fn(u64) -> u64>> {
     let a: Operand = a.parse()?;
     let b: Operand = b.parse()?;
     match op {
-        "+" => Ok(Box::new(move |old| a.get(old) + b.get(old))),
-        "*" => Ok(Box::new(move |old| a.get(old) * b.get(old))),
+        "+" => Ok(Rc::new(move |old| a.get(old) + b.get(old))),
+        "*" => Ok(Rc::new(move |old| a.get(old) * b.get(old))),
         _ => panic!("Unknown operation"),
     }
 }
