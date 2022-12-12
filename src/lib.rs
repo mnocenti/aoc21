@@ -37,4 +37,22 @@ macro_rules! test_with_example {
             }
         }
     };
+    ($func1:ident, $path1:literal, $part1_expected:expr, $func2:ident, $path2:literal, $part2_expected:expr) => {
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+            #[test]
+            fn example1() -> aoc22::MyResult<()> {
+                let part1 = $func1(include_str!($path1))?;
+                assert_eq!(part1, $part1_expected);
+                Ok(())
+            }
+            #[test]
+            fn example2() -> aoc22::MyResult<()> {
+                let part2 = $func2(include_str!($path2))?;
+                assert_eq!(part2, $part2_expected);
+                Ok(())
+            }
+        }
+    };
 }
