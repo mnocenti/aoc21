@@ -25,18 +25,10 @@ pub fn day13(input: &str) -> aoc22::MyResult<(usize, usize)> {
     distress_signal.push(second_divider.clone());
     distress_signal.sort();
 
-    let div1_pos = distress_signal
-        .iter()
-        .position(|p| *p == first_divider)
-        .ok_or("Divider not found!")?
-        + 1;
-    let div2_pos = distress_signal
-        .iter()
-        .position(|p| *p == second_divider)
-        .ok_or("Divider not found!")?
-        + 1;
+    let divider_position =
+        |divider| distress_signal.iter().position(|p| *p == divider).unwrap() + 1;
 
-    let part2 = div1_pos * div2_pos;
+    let part2 = divider_position(first_divider) * divider_position(second_divider);
 
     Ok((part1, part2))
 }
@@ -51,13 +43,18 @@ impl Packet {
     /// Consumes the first part of the string until a packet has been parsed, and returns the rest of the string
     fn parse_and_consume(mut s: &str) -> aoc22::MyResult<(Self, &str)> {
         if s.starts_with('[') {
+            // list
+            // consume opening bracket
             s = &s[1..];
             let mut list = Vec::new();
             while !s.starts_with(']') && !s.is_empty() {
+                // parse each subpacket
                 let (subpacket, consumed_s) = Self::parse_and_consume(s)?;
                 list.push(subpacket);
+                // consume the comma if any
                 s = consumed_s.trim_start_matches(',');
             }
+            // consume closing bracket
             if s.starts_with(']') {
                 s = &s[1..];
             }
