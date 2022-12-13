@@ -61,10 +61,8 @@ impl Packet {
             Ok((Self::List(list), s))
         } else {
             // integer
-            match s.find([',', ']']) {
-                Some(end_index) => Ok((Self::Int(s[..end_index].parse()?), &s[end_index..])),
-                None => Ok((Self::Int(s.parse()?), &s[s.len() - 1..])),
-            }
+            let end_index = s.find([',', ']']).unwrap_or(s.len() - 1);
+            Ok((Self::Int(s[..end_index].parse()?), &s[end_index..]))
         }
     }
 }
