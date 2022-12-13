@@ -14,18 +14,16 @@ pub fn day11(input: &str) -> aoc22::MyResult<(u64, u64)> {
 
     let part1 = monkey_business(monkeys.clone(), 20, &|worry| worry / 3)?;
 
-    let ppcm = monkeys.iter().map(|m| m.prime_factor).product();
-    let part2 = monkey_business(monkeys, 10000, &|worry| {
-        decrease_worry_with_ppcm(worry, ppcm)
-    })?;
+    let lcm = monkeys.iter().map(|m| m.prime_factor).product();
+    let part2 = monkey_business(monkeys, 10000, &|worry| decrease_worry_with_lcm(worry, lcm))?;
 
     Ok((part1, part2))
 }
 
 /// use prime numbers to fight anxiety
-fn decrease_worry_with_ppcm(worry: u64, ppcm: u64) -> u64 {
-    if worry > ppcm {
-        worry % ppcm + ppcm
+fn decrease_worry_with_lcm(worry: u64, lcm: u64) -> u64 {
+    if worry > lcm {
+        worry % lcm + lcm
     } else {
         worry
     }
