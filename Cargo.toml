@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 itertools = "0.10.5"
 ndarray = "0.15.6"
+plotters = "0.3.4"
 take-until = "0.1.0"
 
 [[bin]]
@@ -65,6 +66,10 @@ path="src/day13.rs"
 [[bin]]
 name="day14"
 path="src/day14.rs"
+
+[[bin]]
+name="day14_visuals"
+path="src/day14_visuals.rs"
 
 [[bin]]
 name="day15"
