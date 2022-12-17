@@ -2,35 +2,28 @@ use std::{fmt::Display, ops::Index};
 
 use itertools::Itertools;
 
-use plotters::{backend::RGBPixel, prelude::*};
+use pixel_canvas::{input::MouseState, Canvas, Color, Image, RC};
 
 aoc22::main!(day14_visuals, "../inputs/input14.txt");
 
-const TILE_SIZE: i32 = 8;
+const TILE_SIZE: usize = 4;
 
 pub fn day14_visuals(input: &str) -> aoc22::MyResult<(usize, usize)> {
     let (mut cave, sand_entry) = parse_cave(input)?;
     add_bedrock(&mut cave);
-    let mut graphics = BitMapBackend::<RGBPixel>::gif(
-        "sand.gif",
-        (
-            cave.dimensions.0 as u32 * TILE_SIZE as u32,
-            cave.dimensions.1 as u32 * TILE_SIZE as u32,
-        ),
-        1,
-    )?;
+    let mut render_count = 0usize;
+    let canvas = Canvas::new(cave.dimensions.0 * TILE_SIZE, cave.dimensions.1 * TILE_SIZE)
+        .title("I don't like sand")
+        .state(MouseState::new())
+        .show_ms(true);
 
-    cave.draw(&mut graphics)?;
-    graphics.present()?;
-
-    let mut count = 0;
-    while add_sand(&mut cave, sand_entry, &mut graphics) {
-        count += 1;
-        if count > 100 {
-            count = 0;
-            graphics.present()?;
+    canvas.render(move |_, image| {
+        if render_count == 0 {
+            cave.draw(image);
         }
-    }
+        add_sand(&mut cave, sand_entry, image);
+        render_count += 1;
+    });
 
     Ok((0, 0))
 }
@@ -85,39 +78,43 @@ impl Cave {
         self.dimensions.1
     }
 
-    fn draw(&self, graphics: &mut BitMapBackend<RGBPixel>) -> aoc22::MyResult<()> {
+    fn draw(&self, image: &mut Image) {
         for point in (0..self.width()).cartesian_product(0..self.height()) {
-            Self::draw_tile(point, self[point], graphics)?;
+            Self::draw_tile(point, self[point], image);
         }
-        Ok(())
     }
 
-    fn draw_tile((x, y): Coord, tile: Tile, graphics: &mut BitMapBackend) -> aoc22::MyResult<()> {
+    fn draw_tile((x, y): Coord, tile: Tile, image: &mut Image) {
         let color = Self::get_color(tile);
-        let (x, y) = (x as i32 * TILE_SIZE, y as i32 * TILE_SIZE);
-        graphics.draw_rect((x, y), (x + TILE_SIZE, y + TILE_SIZE), &color, true)?;
-        Ok(())
+        let (x, y) = (x * TILE_SIZE, y * TILE_SIZE);
+        draw_square(image, (x, y), TILE_SIZE, color);
     }
 
     fn set_tile(&mut self, (x, y): Coord, tile: Tile) {
         self.tiles[x][y] = tile;
     }
 
-    fn set_and_draw_tile(
-        &mut self,
-        (x, y): Coord,
-        tile: Tile,
-        graphics: &mut BitMapBackend,
-    ) -> aoc22::MyResult<()> {
+    fn set_and_draw_tile(&mut self, (x, y): Coord, tile: Tile, image: &mut Image) {
         self.tiles[x][y] = tile;
-        Self::draw_tile((x, y), tile, graphics)
+        Self::draw_tile((x, y), tile, image);
     }
 
-    const AIR_COLOR: RGBColor = RGBColor(0x8C, 0xDC, 0xDA);
-    const ROCK_COLOR: RGBColor = RGBColor(0x33, 0x1F, 0x1F);
-    const SAND_COLOR: RGBColor = RGBColor(0xDC, 0xCD, 0x79);
-
-    fn get_color(tile: Tile) -> RGBColor {
+    const AIR_COLOR: Color = Color {
+        r: 0x7C,
+        g: 0xCC,
+        b: 0xCA,
+    };
+    const ROCK_COLOR: Color = Color {
+        r: 0x33,
+        g: 0x1F,
+        b: 0x1F,
+    };
+    const SAND_COLOR: Color = Color {
+        r: 0xDC,
+        g: 0xCD,
+        b: 0x79,
+    };
+    fn get_color(tile: Tile) -> Color {
         match tile {
             Tile::Air => Self::AIR_COLOR,
             Tile::Rock => Self::ROCK_COLOR,
@@ -126,33 +123,39 @@ impl Cave {
     }
 }
 
+fn draw_square(image: &mut Image, (topx, topy): (usize, usize), size: usize, color: Color) {
+    let height = image.height();
+    for (x, y) in (topx..topx + size).cartesian_product(topy..topy + size) {
+        image[RC(height - y - 1, x)] = color;
+    }
+}
+
 #[derive(Debug, PartialEq)]
 enum SandMovement {
     Move(Coord),
     Rest,
     EndlessAbyss,
-    SourceBlocked,
 }
 
-fn add_sand(cave: &mut Cave, source_pos: Coord, graphics: &mut BitMapBackend) -> bool {
+fn add_sand(cave: &mut Cave, source_pos: Coord, image: &mut Image) -> bool {
+    if cave[source_pos] != Tile::Air {
+        return false;
+    }
     let mut sand_pos = source_pos;
-    let mut result = sand_physics(cave, sand_pos, source_pos);
+    let mut result = sand_physics(cave, sand_pos);
     while let SandMovement::Move(new_pos) = result {
         sand_pos = new_pos;
-        result = sand_physics(cave, sand_pos, source_pos);
+        result = sand_physics(cave, sand_pos);
     }
     if let SandMovement::Rest = result {
-        cave.set_and_draw_tile(sand_pos, Tile::Sand, graphics)
-            .unwrap();
+        cave.set_and_draw_tile(sand_pos, Tile::Sand, image);
     }
 
-    result != SandMovement::EndlessAbyss && result != SandMovement::SourceBlocked
+    result != SandMovement::EndlessAbyss
 }
 
-fn sand_physics(cave: &Cave, (x, y): Coord, source_pos: Coord) -> SandMovement {
-    if cave[source_pos] != Tile::Air {
-        SandMovement::SourceBlocked
-    } else if y == cave.height() - 1 {
+fn sand_physics(cave: &Cave, (x, y): Coord) -> SandMovement {
+    if y == cave.height() - 1 {
         SandMovement::EndlessAbyss
     } else if cave[(x, y + 1)] == Tile::Air {
         SandMovement::Move((x, y + 1))
