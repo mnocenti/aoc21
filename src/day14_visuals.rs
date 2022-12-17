@@ -2,7 +2,10 @@ use std::{collections::VecDeque, fmt::Display, ops::Index};
 
 use itertools::Itertools;
 
-use pixel_canvas::{input::MouseState, Canvas, Color, Image, RC};
+use pixel_canvas::{
+    input::{glutin::event::ElementState, Event, MouseState, WindowEvent},
+    Canvas, Color, Image, RC,
+};
 
 aoc22::main!(day14_visuals, "../inputs/input14.txt");
 
@@ -14,17 +17,48 @@ pub fn day14_visuals(input: &str) -> aoc22::MyResult<(usize, usize)> {
     let mut count = 0usize;
     let mut sand_grains = VecDeque::new();
     let mut speed = 1.0;
-    let canvas = Canvas::new(cave.dimensions.0 * TILE_SIZE, cave.dimensions.1 * TILE_SIZE)
+    let pressed = false;
+    let w = cave.dimensions.0 * TILE_SIZE;
+    let h = cave.dimensions.1 * TILE_SIZE;
+    let canvas = Canvas::new(w, h)
         .title("I don't like sand")
-        .state(MouseState::new())
+        .state((MouseState::new(), pressed))
+        .input(|canvas_info, (mouse_state, pressed), event| {
+            MouseState::handle_input(canvas_info, mouse_state, event);
+            if let Event::WindowEvent {
+                window_id: _,
+                event:
+                    WindowEvent::MouseInput {
+                        device_id: _,
+                        state,
+                        button: _,
+                        ..
+                    },
+            } = event
+            {
+                *pressed = *state == ElementState::Pressed;
+            }
+            false
+        })
         .show_ms(true);
-    canvas.render(move |_, image| {
+    canvas.render(move |(mouse_state, pressed), image| {
         if count == 0 {
             cave.draw(image);
-            add_sand(&cave, sand_entry, &mut sand_grains);
         }
-        speed *= 1.005;
+        let in_bounds = |x, y| x >= 0 && x < w as i32 && y >= 0 && y < h as i32;
+        if *pressed && in_bounds(mouse_state.x, mouse_state.y) {
+            cave.set_and_draw_tile(
+                (
+                    mouse_state.x as usize / TILE_SIZE,
+                    (image.height() - mouse_state.y as usize - 1) / TILE_SIZE,
+                ),
+                Tile::Rock,
+                image,
+            );
+        }
+        speed *= 1.0025;
         for _ in 0..(speed as usize) {
+            add_sand(&cave, sand_entry, &mut sand_grains);
             process_sand(&mut cave, &mut sand_grains, image);
             count += 1;
         }
@@ -157,18 +191,23 @@ fn add_sand(cave: &Cave, source_pos: Coord, sand_grains: &mut VecDeque<Coord>) {
 }
 
 fn process_sand(cave: &mut Cave, sand_grains: &mut VecDeque<Coord>, image: &mut Image) {
-    if let Some(&grain) = sand_grains.front() {
-        let result = sand_physics(cave, grain);
+    let mut pop_first_grain = false;
+    for grain in sand_grains.iter_mut() {
+        let result = sand_physics(cave, *grain);
         if let SandMovement::Move(new_pos) = result {
+            Cave::draw_tile(*grain, Tile::Air, image);
             Cave::draw_tile(new_pos, Tile::FlowingSand, image);
-            sand_grains.push_front(new_pos);
+            *grain = new_pos;
         }
         if let SandMovement::Rest = result {
-            cave.set_and_draw_tile(grain, Tile::Sand, image);
+            cave.set_and_draw_tile(*grain, Tile::Sand, image);
         }
-        if result == SandMovement::EndlessAbyss || result == SandMovement::Rest {
-            sand_grains.pop_front();
-        }
+
+        pop_first_grain =
+            pop_first_grain || result == SandMovement::EndlessAbyss || result == SandMovement::Rest;
+    }
+    if pop_first_grain {
+        sand_grains.pop_front();
     }
 }
 
