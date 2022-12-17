@@ -21,10 +21,10 @@ pub fn day14_visuals(input: &str) -> aoc22::MyResult<(usize, usize)> {
     canvas.render(move |_, image| {
         if count == 0 {
             cave.draw(image);
+            add_sand(&cave, sand_entry, &mut sand_grains);
         }
         speed *= 1.005;
         for _ in 0..(speed as usize) {
-            add_sand(&cave, sand_entry, &mut sand_grains);
             process_sand(&mut cave, &mut sand_grains, image);
             count += 1;
         }
@@ -157,23 +157,18 @@ fn add_sand(cave: &Cave, source_pos: Coord, sand_grains: &mut VecDeque<Coord>) {
 }
 
 fn process_sand(cave: &mut Cave, sand_grains: &mut VecDeque<Coord>, image: &mut Image) {
-    let mut pop_first_grain = false;
-    for grain in sand_grains.iter_mut() {
-        let result = sand_physics(cave, *grain);
+    if let Some(&grain) = sand_grains.front() {
+        let result = sand_physics(cave, grain);
         if let SandMovement::Move(new_pos) = result {
-            Cave::draw_tile(*grain, Tile::Air, image);
             Cave::draw_tile(new_pos, Tile::FlowingSand, image);
-            *grain = new_pos;
+            sand_grains.push_front(new_pos);
         }
         if let SandMovement::Rest = result {
-            cave.set_and_draw_tile(*grain, Tile::Sand, image);
+            cave.set_and_draw_tile(grain, Tile::Sand, image);
         }
-
-        pop_first_grain =
-            pop_first_grain || result == SandMovement::EndlessAbyss || result == SandMovement::Rest;
-    }
-    if pop_first_grain {
-        sand_grains.pop_front();
+        if result == SandMovement::EndlessAbyss || result == SandMovement::Rest {
+            sand_grains.pop_front();
+        }
     }
 }
 
