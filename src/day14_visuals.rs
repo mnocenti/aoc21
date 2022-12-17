@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Index};
+use std::{collections::VecDeque, fmt::Display, ops::Index};
 
 use itertools::Itertools;
 
@@ -11,18 +11,23 @@ const TILE_SIZE: usize = 4;
 pub fn day14_visuals(input: &str) -> aoc22::MyResult<(usize, usize)> {
     let (mut cave, sand_entry) = parse_cave(input)?;
     add_bedrock(&mut cave);
-    let mut render_count = 0usize;
+    let mut count = 0usize;
+    let mut sand_grains = VecDeque::new();
+    let mut speed = 1.0;
     let canvas = Canvas::new(cave.dimensions.0 * TILE_SIZE, cave.dimensions.1 * TILE_SIZE)
         .title("I don't like sand")
         .state(MouseState::new())
         .show_ms(true);
-
     canvas.render(move |_, image| {
-        if render_count == 0 {
+        if count == 0 {
             cave.draw(image);
         }
-        add_sand(&mut cave, sand_entry, image);
-        render_count += 1;
+        speed *= 1.005;
+        for _ in 0..(speed as usize) {
+            add_sand(&cave, sand_entry, &mut sand_grains);
+            process_sand(&mut cave, &mut sand_grains, image);
+            count += 1;
+        }
     });
 
     Ok((0, 0))
@@ -37,6 +42,7 @@ enum Tile {
     Air,
     Rock,
     Sand,
+    FlowingSand,
 }
 
 impl Display for Tile {
@@ -45,6 +51,7 @@ impl Display for Tile {
             Tile::Air => '.',
             Tile::Rock => '#',
             Tile::Sand => 'o',
+            Tile::FlowingSand => 'o',
         }
         .fmt(f)
     }
@@ -114,11 +121,17 @@ impl Cave {
         g: 0xCD,
         b: 0x79,
     };
+    const FLOWING_SAND_COLOR: Color = Color {
+        r: 0xAC,
+        g: 0xCC,
+        b: 0xA1,
+    };
     fn get_color(tile: Tile) -> Color {
         match tile {
             Tile::Air => Self::AIR_COLOR,
             Tile::Rock => Self::ROCK_COLOR,
             Tile::Sand => Self::SAND_COLOR,
+            Tile::FlowingSand => Self::FLOWING_SAND_COLOR,
         }
     }
 }
@@ -137,21 +150,31 @@ enum SandMovement {
     EndlessAbyss,
 }
 
-fn add_sand(cave: &mut Cave, source_pos: Coord, image: &mut Image) -> bool {
-    if cave[source_pos] != Tile::Air {
-        return false;
+fn add_sand(cave: &Cave, source_pos: Coord, sand_grains: &mut VecDeque<Coord>) {
+    if cave[source_pos] == Tile::Air {
+        sand_grains.push_back(source_pos);
     }
-    let mut sand_pos = source_pos;
-    let mut result = sand_physics(cave, sand_pos);
-    while let SandMovement::Move(new_pos) = result {
-        sand_pos = new_pos;
-        result = sand_physics(cave, sand_pos);
-    }
-    if let SandMovement::Rest = result {
-        cave.set_and_draw_tile(sand_pos, Tile::Sand, image);
-    }
+}
 
-    result != SandMovement::EndlessAbyss
+fn process_sand(cave: &mut Cave, sand_grains: &mut VecDeque<Coord>, image: &mut Image) {
+    let mut pop_first_grain = false;
+    for grain in sand_grains.iter_mut() {
+        let result = sand_physics(cave, *grain);
+        if let SandMovement::Move(new_pos) = result {
+            Cave::draw_tile(*grain, Tile::Air, image);
+            Cave::draw_tile(new_pos, Tile::FlowingSand, image);
+            *grain = new_pos;
+        }
+        if let SandMovement::Rest = result {
+            cave.set_and_draw_tile(*grain, Tile::Sand, image);
+        }
+
+        pop_first_grain =
+            pop_first_grain || result == SandMovement::EndlessAbyss || result == SandMovement::Rest;
+    }
+    if pop_first_grain {
+        sand_grains.pop_front();
+    }
 }
 
 fn sand_physics(cave: &Cave, (x, y): Coord) -> SandMovement {
