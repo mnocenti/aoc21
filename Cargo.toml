@@ -74,3 +74,7 @@ path="src/day14_visuals.rs"
 [[bin]]
 name="day15"
 path="src/day15.rs"
+
+[[bin]]
+name="day18"
+path="src/day18.rs"
