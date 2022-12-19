@@ -90,7 +90,7 @@ fn simulate_exterior_air(cubes: &mut HashMap<Coord, Matter>) {
     let (min_x, max_x) = minmax(cubes, |pos| pos.x);
     let (min_y, max_y) = minmax(cubes, |pos| pos.y);
     let (min_z, max_z) = minmax(cubes, |pos| pos.z);
-    // add layers of air below the lava
+    // add layers of air around the lava
     (min_x - 1..=max_x + 1)
         .cartesian_product((min_z - 1)..max_z + 1)
         .for_each(|(x, z)| {
